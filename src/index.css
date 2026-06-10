@@ -507,3 +507,105 @@ body {
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(79,195,247,0.3); border-radius: 2px; }
+
+/* ── Local agent status indicator ── */
+.agent-status-dot {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.agent-status-dot--online  { color: #69f0ae; border: 1px solid rgba(105,240,174,0.3); background: rgba(105,240,174,0.08); }
+.agent-status-dot--offline { color: #333;    border: 1px solid rgba(255,255,255,0.06); }
+
+/* ── Agent output overlay ── */
+.agent-output-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 32px;
+  pointer-events: none;
+}
+
+.agent-output-panel {
+  pointer-events: all;
+  width: min(760px, 90vw);
+  max-height: 50vh;
+  background: rgba(4, 10, 20, 0.96);
+  border: 1px solid rgba(79,195,247,0.25);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 0 60px rgba(79,195,247,0.15), 0 20px 60px rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.agent-output-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(79,195,247,0.1);
+  flex-shrink: 0;
+}
+
+.agent-output-title {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--blue);
+  text-transform: uppercase;
+}
+
+.agent-output-close {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #555;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.agent-output-close:hover { color: #fff; }
+
+.agent-output-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.agent-line { margin-bottom: 4px; }
+.agent-line--text  { color: #ccc; }
+.agent-line--tool  { color: #4fc3f7; }
+.agent-line--error { color: #ff5252; }
+
+.agent-tool-badge {
+  display: inline-block;
+  background: rgba(79,195,247,0.1);
+  border: 1px solid rgba(79,195,247,0.2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-right: 8px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.agent-cursor {
+  display: inline-block;
+  color: var(--blue);
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}

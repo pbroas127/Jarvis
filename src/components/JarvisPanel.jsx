@@ -10,7 +10,7 @@ const SNAP = {
   'bottom-right': { x: '88%',  y: '88%',  tx: '-100%',ty: '-100%'},
 }
 
-export default function JarvisPanel({ position, speaking, listening, message, onMicClick, onPositionChange }) {
+export default function JarvisPanel({ position, speaking, listening, message, onMicClick, onPositionChange, localAgentOnline }) {
   const panelRef = useRef(null)
   const dragState = useRef(null)
   const [dragging, setDragging] = useState(false)
@@ -98,6 +98,11 @@ export default function JarvisPanel({ position, speaking, listening, message, on
 
       <div className="jarvis-status">
         {listening ? '● Listening...' : speaking ? '● Speaking...' : '○ Standby'}
+      </div>
+
+      <div className={`agent-status-dot ${localAgentOnline ? 'agent-status-dot--online' : 'agent-status-dot--offline'}`}
+           title={localAgentOnline ? 'Local agent online' : 'Local agent offline — start local-agent/server.js on your PC'}>
+        {localAgentOnline ? '⬛ AGENT ONLINE' : '○ AGENT OFFLINE'}
       </div>
 
       <button className={`mic-btn ${listening ? 'active' : ''}`} onClick={onMicClick} title="Click to speak">
