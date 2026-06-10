@@ -2,87 +2,65 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
 
-// Tools Jarvis can use to control the dashboard
-const TOOLS = [
+// Conversation history per-session (in-memory; resets on cold start)
+const history = []
+
+// Dashboard control tools — Claude uses these only when it makes sense
+const DASHBOARD_TOOLS = [
   {
     name: 'move_jarvis',
-    description: 'Move the Jarvis orb panel to a different corner or back to center of the screen.',
+    description: 'Move the Jarvis orb panel to a different position on screen.',
     input_schema: {
       type: 'object',
       properties: {
-        position: {
-          type: 'string',
-          enum: ['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right'],
-          description: 'Where to move the Jarvis panel on screen.'
-        }
+        position: { type: 'string', enum: ['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right'] }
       },
       required: ['position']
     }
   },
   {
     name: 'add_todo',
-    description: 'Add a new task to today\'s to-do list.',
+    description: 'Add a task to today\'s to-do list.',
     input_schema: {
       type: 'object',
-      properties: {
-        text: { type: 'string', description: 'The task to add.' }
-      },
+      properties: { text: { type: 'string' } },
       required: ['text']
     }
   },
   {
     name: 'complete_todo',
-    description: 'Mark a to-do item as done by matching its text.',
+    description: 'Mark a to-do item done by partial text match.',
     input_schema: {
       type: 'object',
-      properties: {
-        text: { type: 'string', description: 'Partial or full text of the task to mark complete.' }
-      },
+      properties: { text: { type: 'string' } },
       required: ['text']
     }
   },
   {
     name: 'delete_todo',
-    description: 'Delete a to-do item by matching its text.',
+    description: 'Delete a to-do item by partial text match.',
     input_schema: {
       type: 'object',
-      properties: {
-        text: { type: 'string', description: 'Partial or full text of the task to delete.' }
-      },
+      properties: { text: { type: 'string' } },
       required: ['text']
     }
   },
   {
     name: 'set_revenue_period',
-    description: 'Switch the revenue card to show day, week, or month totals.',
+    description: 'Switch the revenue card between day, week, and month views.',
     input_schema: {
       type: 'object',
-      properties: {
-        period: { type: 'string', enum: ['day', 'week', 'month'] }
-      },
+      properties: { period: { type: 'string', enum: ['day', 'week', 'month'] } },
       required: ['period']
     }
   },
   {
     name: 'set_social_metric',
-    description: 'Switch the social media chart to display views, subs (followers), or revenue.',
+    description: 'Switch the social media chart between views, subs, and revenue.',
     input_schema: {
       type: 'object',
-      properties: {
-        metric: { type: 'string', enum: ['views', 'subs', 'revenue'] }
-      },
+      properties: { metric: { type: 'string', enum: ['views', 'subs', 'revenue'] } },
       required: ['metric']
-    }
-  },
-  {
-    name: 'speak',
-    description: 'Respond verbally to the user without making any dashboard changes.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'What to say back to the user.' }
-      },
-      required: ['message']
     }
   }
 ]
@@ -93,25 +71,43 @@ export default async function handler(req, res) {
   const { transcript, context } = req.body
   if (!transcript) return res.status(400).json({ error: 'transcript required' })
 
+  // Add user message to rolling history (keep last 20 turns)
+  history.push({ role: 'user', content: transcript })
+  if (history.length > 20) history.splice(0, history.length - 20)
+
   try {
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
-      system: `You are Jarvis, a smart personal AI assistant running as a dashboard widget.
-You control a productivity dashboard with: a clock, to-do list, social media stats (YouTube, Instagram, Facebook), and revenue data (Stripe, RevenueCat, Era Context).
-You can move yourself, manage todos, and switch what data is displayed.
-Always use a tool to take action or respond. Be concise and confident — you're Jarvis.
-Current dashboard context: ${JSON.stringify(context || {})}`,
-      messages: [{ role: 'user', content: transcript }],
-      tools: TOOLS,
-      tool_choice: { type: 'any' }
+      system: `You are Jarvis — a sharp, witty personal AI assistant, just like the one from Iron Man.
+You live on a productivity dashboard. You can answer any question, help think through problems, write things, explain concepts, brainstorm ideas, do math, give advice — anything.
+You also have optional tools to control the dashboard when the user asks: move yourself around the screen, manage their to-do list, or change what data is displayed.
+Use tools only when the user is clearly asking for a dashboard action. Otherwise just respond conversationally.
+Be concise, confident, and a little personality-forward — you're Jarvis, not a generic chatbot.
+Keep spoken responses under 3 sentences when possible — this will be read aloud.
+Current dashboard state: ${JSON.stringify(context || {})}`,
+      messages: history,
+      tools: DASHBOARD_TOOLS,
+      tool_choice: { type: 'auto' }  // Claude decides whether to use tools or just talk
     })
 
+    // Collect any tool calls
     const toolCalls = response.content
       .filter(b => b.type === 'tool_use')
       .map(b => ({ name: b.name, input: b.input }))
 
-    res.json({ toolCalls })
+    // Collect any free-form text response
+    const text = response.content
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join(' ')
+      .trim()
+
+    // Add assistant reply to history
+    const assistantContent = response.content
+    history.push({ role: 'assistant', content: assistantContent })
+
+    res.json({ toolCalls, text })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: err.message })

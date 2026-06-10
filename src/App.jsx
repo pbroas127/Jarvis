@@ -82,15 +82,12 @@ export default function App() {
         setSocialMetric(input.metric)
         return `Showing ${input.metric} on social chart.`
 
-      case 'speak':
-        return input.message
-
       default:
         return null
     }
   }, [])
 
-  // ── Send transcript to /api/chat, run tools, speak result ──
+  // ── Send transcript to /api/chat, run tools + speak any text reply ──
   const handleTranscript = useCallback(async (transcript) => {
     setMessage(`You: "${transcript}"`)
     try {
@@ -105,16 +102,16 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transcript, context })
       })
-      const { toolCalls, error } = await res.json()
+      const { toolCalls = [], text, error } = await res.json()
       if (error) { speak("Sorry, I had trouble with that."); return }
 
-      // Execute each tool, collect the speak message
-      let spokenMessage = null
+      // Run any dashboard tool calls
       for (const { name, input } of toolCalls) {
-        const result = executeTool(name, input)
-        if ((name === 'speak' || !spokenMessage) && result) spokenMessage = result
+        executeTool(name, input)
       }
-      if (spokenMessage) speak(spokenMessage)
+
+      // Speak the free-form text response (always present when Claude just talks)
+      if (text) speak(text)
     } catch {
       speak("I couldn't reach my brain. Check your API key.")
     }
