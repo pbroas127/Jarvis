@@ -21,26 +21,78 @@ body {
   --card-border: rgba(79,195,247,0.15);
 }
 
-/* ── 3-column layout: panels | jarvis | panels ── */
+/* ── 2x2 grid — Jarvis floats on top ── */
 .dashboard {
   display: grid;
-  grid-template-columns: 1fr 260px 1fr;
+  grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   height: 100vh;
   width: 100vw;
 }
 
-/* Left column panels */
-.clock-card  { grid-column: 1; grid-row: 1; border-right: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); }
-.social-card { grid-column: 1; grid-row: 2; border-right: 1px solid var(--card-border); }
+/* Panel positions */
+.clock-card   { grid-column: 1; grid-row: 1; border-right: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); }
+.todo-card    { grid-column: 2; grid-row: 1; border-bottom: 1px solid var(--card-border); }
+.social-card  { grid-column: 1; grid-row: 2; border-right: 1px solid var(--card-border); }
+.revenue-card { grid-column: 2; grid-row: 2; }
 
-/* Center column — Jarvis takes both rows */
+/* ── Floating Jarvis panel ── */
+.jarvis-panel {
+  position: fixed;
+  z-index: 100;
+  background: rgba(4,12,24,0.88);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 14px 18px;
+  width: 220px;
+  transition: left 0.4s cubic-bezier(.4,0,.2,1), top 0.4s cubic-bezier(.4,0,.2,1), transform 0.4s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 40px rgba(79,195,247,0.12), 0 8px 32px rgba(0,0,0,0.5);
+  user-select: none;
+}
+
+.jarvis-panel--corner {
+  width: 180px;
+  gap: 10px;
+  padding: 12px 12px 14px;
+}
+
+.jarvis-panel--dragging {
+  transition: none;
+  opacity: 0.92;
+  box-shadow: 0 0 60px rgba(79,195,247,0.25), 0 16px 48px rgba(0,0,0,0.6);
+}
+
+.jarvis-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: radial-gradient(ellipse at center, rgba(79,195,247,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.jarvis-drag-handle {
+  color: #333;
+  cursor: grab;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.jarvis-drag-handle:hover { color: #555; }
+.jarvis-drag-handle:active { cursor: grabbing; }
+
+/* dummy — keep for legacy refs */
 .jarvis-column {
-  grid-column: 2;
-  grid-row: 1 / 3;
-  border-left: 1px solid var(--card-border);
-  border-right: 1px solid var(--card-border);
-  background: rgba(4,12,24,0.6);
+  display: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -60,7 +112,7 @@ body {
 }
 
 /* Right column panels */
-.todo-card    { grid-column: 3; grid-row: 1; border-left: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); }
+/* .todo-card grid pos handled above */
 .revenue-card { grid-column: 3; grid-row: 2; border-left: 1px solid var(--card-border); }
 
 /* ── Generic card ── */
@@ -338,6 +390,25 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+.orb--small {
+  width: 80px !important;
+  height: 80px !important;
+}
+
+.orb-container--small {
+  width: 80px !important;
+  height: 80px !important;
+}
+
+.orb-container--small .orb-ring:nth-child(2) { width: 96px;  height: 96px;  }
+.orb-container--small .orb-ring:nth-child(3) { width: 116px; height: 116px; }
+.orb-container--small .orb-ring:nth-child(4) { width: 136px; height: 136px; }
+
+.chat-bubble--small {
+  font-size: 11px;
+  padding: 7px 10px;
 }
 
 .orb {

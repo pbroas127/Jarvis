@@ -1,46 +1,31 @@
 import { useState, useEffect } from 'react'
 
-// ─────────────────────────────────────────────────────────────
-// DATA SOURCE: Browser localStorage (key: "jarvis_todos")
-// Todos are stored locally on this device/browser.
-// To sync across devices later → replace localStorage with
-// a backend API call (e.g. Supabase, Firebase, or your own).
-// ─────────────────────────────────────────────────────────────
-
-const TODO_KEY = 'jarvis_todos'
 const LAST_SEEN_KEY = 'jarvis_last_seen'
+const todayStr = () => new Date().toDateString()
 
-function todayStr() {
-  return new Date().toDateString()
-}
+// DATA SOURCE: todos array comes from App.jsx (stored in localStorage)
+// Jarvis can add/complete/delete todos via voice — those go through App.jsx
 
-export default function TodoCard({ onJarvisPrompt, userName = 'Boss' }) {
-  const [todos, setTodos] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(TODO_KEY)) || [] } catch { return [] }
-  })
+export default function TodoCard({ todos, onSaveTodos, onJarvisPrompt, userName = 'Boss' }) {
   const [adding, setAdding] = useState(false)
   const [input, setInput] = useState('')
 
-  useEffect(() => {
-    localStorage.setItem(TODO_KEY, JSON.stringify(todos))
-  }, [todos])
-
-  // Prompt Jarvis to ask for tasks on first visit of the day
+  // Prompt Jarvis on first daily visit with no tasks
   useEffect(() => {
     const last = localStorage.getItem(LAST_SEEN_KEY)
     const todayTodos = todos.filter(t => t.date === todayStr())
     if (last !== todayStr() && todayTodos.length === 0) {
       localStorage.setItem(LAST_SEEN_KEY, todayStr())
-      onJarvisPrompt?.("Good morning! What are your priorities for today? I can add them to your list.")
+      onJarvisPrompt?.("Good morning! What are your priorities for today?")
     }
   }, [])
 
   const toggle = (id) =>
-    setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
+    onSaveTodos(todos.map(t => t.id === id ? { ...t, done: !t.done } : t))
 
   const addTodo = () => {
     if (!input.trim()) return
-    setTodos(prev => [...prev, { id: Date.now(), text: input.trim(), done: false, date: todayStr() }])
+    onSaveTodos([...todos, { id: Date.now(), text: input.trim(), done: false, date: todayStr() }])
     setInput('')
     setAdding(false)
   }
@@ -57,7 +42,7 @@ export default function TodoCard({ onJarvisPrompt, userName = 'Boss' }) {
 
       <div className="todo-list">
         {todayTodos.length === 0 && !adding && (
-          <div className="todo-empty">No tasks yet — ask Jarvis or hit + ADD</div>
+          <div className="todo-empty">No tasks — ask Jarvis or hit + ADD</div>
         )}
         {todayTodos.map(todo => (
           <div key={todo.id} className={`todo-item ${todo.done ? 'done' : ''}`} onClick={() => toggle(todo.id)}>
