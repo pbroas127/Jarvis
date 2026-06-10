@@ -211,3 +211,44 @@ app.listen(PORT, () => {
   console.log(`  Workspace: ${WORKSPACE}`)
   console.log(`  Press Ctrl+C to stop\n`)
 })
+
+// ── Regular chat endpoint (mirrors Vercel /api/chat for local dev) ──
+app.post('/chat', async (req, res) => {
+  const { transcript, context, localAgentOnline } = req.body
+  if (!transcript) return res.status(400).json({ error: 'transcript required' })
+
+  const DASHBOARD_TOOLS = [
+    { name: 'move_jarvis', description: 'Move the Jarvis orb to a different position.', input_schema: { type: 'object', properties: { position: { type: 'string', enum: ['center','top-left','top-right','bottom-left','bottom-right'] } }, required: ['position'] } },
+    { name: 'add_todo', description: "Add a task to today's to-do list.", input_schema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } },
+    { name: 'complete_todo', description: 'Mark a to-do item done by partial text match.', input_schema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } },
+    { name: 'delete_todo', description: 'Delete a to-do item by partial text match.', input_schema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } },
+    { name: 'set_revenue_period', description: 'Switch revenue card view.', input_schema: { type: 'object', properties: { period: { type: 'string', enum: ['day','week','month'] } }, required: ['period'] } },
+    { name: 'set_social_metric', description: 'Switch social chart metric.', input_schema: { type: 'object', properties: { metric: { type: 'string', enum: ['views','subs','revenue'] } }, required: ['metric'] } },
+    { name: 'route_to_local_agent', description: "Route to local agent for system tasks (file writing, running code, opening browser, git ops, etc).", input_schema: { type: 'object', properties: { prompt: { type: 'string' } }, required: ['prompt'] } }
+  ]
+
+  try {
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      system: `You are Jarvis — a sharp, witty personal AI assistant like the one from Iron Man.
+You live on a productivity dashboard. Answer questions, manage to-dos, control the dashboard.
+The local agent is ONLINE — route complex system tasks (write files, run code, open browser, git) to it.
+Be concise, confident, personality-forward. Under 3 sentences when possible — this is read aloud.
+Current dashboard state: ${JSON.stringify(context || {})}`,
+      messages: [{ role: 'user', content: transcript }],
+      tools: DASHBOARD_TOOLS,
+      tool_choice: { type: 'auto' }
+    })
+
+    const agentCall = response.content.find(b => b.type === 'tool_use' && b.name === 'route_to_local_agent')
+    if (agentCall) return res.json({ routeToAgent: true, agentPrompt: agentCall.input.prompt })
+
+    const toolCalls = response.content.filter(b => b.type === 'tool_use').map(b => ({ name: b.name, input: b.input }))
+    const text = response.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim()
+    res.json({ toolCalls, text })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: err.message })
+  }
+})

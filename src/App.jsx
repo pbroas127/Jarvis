@@ -165,7 +165,9 @@ export default function App() {
 
     try {
       // Ask Claude (via Vercel) whether this needs the local agent or just chat
-      const res = await fetch('/api/chat', {
+      // Use local agent's chat endpoint when online (works in local dev), fallback to Vercel
+      const chatUrl = agentOnline ? `${LOCAL_AGENT}/chat` : '/api/chat'
+      const res = await fetch(chatUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transcript, context, localAgentOnline: agentOnline })
