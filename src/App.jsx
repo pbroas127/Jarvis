@@ -3,7 +3,7 @@ import ClockCard from './components/ClockCard'
 import TodoCard from './components/TodoCard'
 import RevenueCard from './components/RevenueCard'
 import SocialCard from './components/SocialCard'
-import JarvisOrb from './components/JarvisOrb'
+import JarvisColumn from './components/JarvisColumn'
 
 export default function App() {
   const [message, setMessage] = useState(null)
@@ -37,32 +37,38 @@ export default function App() {
     const rec = new SR()
     rec.lang = 'en-US'
     rec.interimResults = false
-
     rec.onstart = () => setListening(true)
     rec.onend = () => setListening(false)
     rec.onerror = () => setListening(false)
-
     rec.onresult = (e) => {
       const transcript = e.results[0][0].transcript
       setMessage(`You: "${transcript}"`)
       setTimeout(() => speak(`I heard: ${transcript}. Claude API integration coming soon.`), 500)
     }
-
     rec.start()
   }, [listening, speak])
 
   return (
     <div className="dashboard">
+      {/* TOP LEFT */}
       <ClockCard />
-      <TodoCard onJarvisPrompt={handleJarvisPrompt} userName="Boss" />
-      <SocialCard />
-      <RevenueCard />
-      <JarvisOrb
+
+      {/* CENTER — Jarvis, spans both rows */}
+      <JarvisColumn
         speaking={speaking}
         listening={listening}
         message={message}
         onMicClick={handleMic}
       />
+
+      {/* TOP RIGHT */}
+      <TodoCard onJarvisPrompt={handleJarvisPrompt} userName="Boss" />
+
+      {/* BOTTOM LEFT */}
+      <SocialCard />
+
+      {/* BOTTOM RIGHT */}
+      <RevenueCard />
     </div>
   )
 }

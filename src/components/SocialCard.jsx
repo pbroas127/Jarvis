@@ -1,21 +1,39 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { useState } from 'react'
 
-// Placeholder — replace with real YouTube Data API, Instagram Graph API, Facebook Graph API
+// ─────────────────────────────────────────────────────────────
+// DATA SOURCE: Mock data below (ACCOUNTS array).
+// To go live, replace each account's values with API calls:
+//
+//   YouTube  → Google / YouTube Data API v3
+//              GET https://www.googleapis.com/youtube/v3/channels
+//              Add key to .env: VITE_YOUTUBE_API_KEY
+//              Docs: https://developers.google.com/youtube/v3
+//
+//   Instagram → Meta Graph API
+//               GET /me/insights or /me/media
+//               Add key to .env: VITE_META_ACCESS_TOKEN
+//               Docs: https://developers.facebook.com/docs/instagram-api
+//
+//   Facebook  → Meta Graph API (same token as Instagram)
+//               GET /{page-id}/insights
+//               Add key to .env: VITE_META_ACCESS_TOKEN
+// ─────────────────────────────────────────────────────────────
+
 const ACCOUNTS = [
   {
     platform: 'YouTube',
     color: '#ff4444',
     accounts: [
       { name: 'Main Channel', views: 142000, subs: 28400, revenue: 1820 },
-      { name: 'Clips', views: 43000, subs: 8200, revenue: 310 },
+      { name: 'Clips',        views: 43000,  subs: 8200,  revenue: 310  },
     ]
   },
   {
     platform: 'Instagram',
     color: '#e1306c',
     accounts: [
-      { name: '@main', views: 98000, subs: 62000, revenue: 540 },
+      { name: '@main',  views: 98000, subs: 62000, revenue: 540 },
       { name: '@brand', views: 31000, subs: 18000, revenue: 210 },
     ]
   },
@@ -28,23 +46,20 @@ const ACCOUNTS = [
   }
 ]
 
-const flat = ACCOUNTS.flatMap(p => p.accounts.map(a => ({
-  ...a,
-  label: a.name,
-  platform: p.platform,
-  color: p.color,
-})))
+const flat = ACCOUNTS.flatMap(p =>
+  p.accounts.map(a => ({ ...a, platform: p.platform, color: p.color }))
+)
 
 const METRICS = ['views', 'subs', 'revenue']
-const LABELS = { views: 'Views', subs: 'Followers/Subs', revenue: 'Revenue ($)' }
-const fmtNum = (n) => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n
+const LABELS  = { views: 'Views', subs: 'Followers', revenue: 'Revenue ($)' }
+const fmtNum  = n => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   const d = payload[0]
   return (
-    <div style={{ background: '#0d0d1a', border: '1px solid rgba(79,195,247,0.2)', padding: '10px 14px', borderRadius: 8, fontSize: 12 }}>
-      <div style={{ color: d.payload.color, marginBottom: 4 }}>{d.payload.platform} · {label}</div>
+    <div style={{ background: '#0d0d1a', border: '1px solid rgba(79,195,247,0.2)', padding: '8px 12px', borderRadius: 8, fontSize: 11 }}>
+      <div style={{ color: d.payload.color, marginBottom: 3 }}>{d.payload.platform} · {label}</div>
       <div style={{ color: '#fff' }}>{LABELS[d.dataKey]}: <strong>{fmtNum(d.value)}</strong></div>
     </div>
   )
@@ -55,38 +70,38 @@ export default function SocialCard() {
 
   return (
     <div className="card social-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+      <div className="social-top">
         <div className="card-title" style={{ marginBottom: 0 }}>Social Media</div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 5 }}>
           {METRICS.map(m => (
-            <button key={m} className={`rev-tab ${metric === m ? 'active' : ''}`} onClick={() => setMetric(m)} style={{ fontSize: 10, padding: '3px 10px' }}>
+            <button key={m} className={`rev-tab ${metric === m ? 'active' : ''}`} onClick={() => setMetric(m)} style={{ fontSize: 9, padding: '2px 8px' }}>
               {m.toUpperCase()}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Legend */}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 8 }}>
+      {/* Platform legend */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 6, flexShrink: 0 }}>
         {ACCOUNTS.map(p => (
-          <div key={p.platform} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#888' }}>
-            <div style={{ width: 8, height: 8, borderRadius: 2, background: p.color }} />
+          <div key={p.platform} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: '#666' }}>
+            <div style={{ width: 7, height: 7, borderRadius: 2, background: p.color }} />
             {p.platform}
           </div>
         ))}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <div className="social-chart">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={flat} margin={{ top: 4, right: 4, left: -20, bottom: 20 }}>
+          <BarChart data={flat} margin={{ top: 4, right: 4, left: -24, bottom: 22 }}>
             <XAxis
-              dataKey="label"
-              tick={{ fill: '#555', fontSize: 10 }}
-              angle={-25}
+              dataKey="name"
+              tick={{ fill: '#555', fontSize: 9 }}
+              angle={-20}
               textAnchor="end"
               interval={0}
             />
-            <YAxis tick={{ fill: '#444', fontSize: 10 }} tickFormatter={fmtNum} />
+            <YAxis tick={{ fill: '#444', fontSize: 9 }} tickFormatter={fmtNum} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(79,195,247,0.05)' }} />
             <Bar dataKey={metric} radius={[3, 3, 0, 0]}>
               {flat.map((entry, i) => (
